@@ -1,0 +1,15 @@
+export const darkColors = {
+  primary: "#cabeff",
+  onPrimary: "#2f009b",
+  secondary: "#c9c3dc",
+  onSecondary: "#312e41",
+  secondaryContainer: "#484459",
+  onSecondaryContainer: "#e6dff9",
+  surface: "#1c1b1e",
+  onSurface: "#e5e1e5",
+  error: "#ffb4a9",
+  onError: "#680003",
+  errorContainer: "#930006",
+  onErrorContainer: "#ffdad4",
+  outline: "#938f99",
+};

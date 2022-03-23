@@ -7,20 +7,29 @@ import { Source } from "data/entity/source";
 import { Article } from "data/entity/article";
 import { newsRepositoryFactory, NewsRepository } from "data/repository/news";
 
-interface TimelineUiState {
+interface TimelineUiStateWithComputedProperties {
   readonly isRetrievingSources: boolean;
   readonly isRetrievingArticles: boolean;
   readonly hasFailedToRetrieveSources: boolean;
   readonly hasFailedToRetrieveArticles: boolean;
+  readonly canAvoidMultipleLoaders: boolean;
+  readonly currentSelectedSource?: Source;
   readonly sources: Source[];
   readonly articles: Article[];
 }
+type TimelineUiStateWithoutComputedProperties = Omit<
+  TimelineUiStateWithComputedProperties,
+  "canAvoidMultipleLoaders"
+>;
 
 interface TimelineUiEvents {
   onRetrieveSourcesAndArticles(): Promise<void>;
   onRetrieveArticlesFromSource(source: Source): Promise<void>;
 }
 
+interface RetrievingArticlesActionPayload {
+  readonly source: Source;
+}
 interface SuccessfullyHasRetrievedSourcesActionPayload {
   readonly sources: Source[];
 }
@@ -36,9 +45,10 @@ type TimelineReducerActionType =
   | "failed-to-retrieve-articles";
 type TimelineReducerActionPayload =
   | SuccessfullyHasRetrievedSourcesActionPayload
-  | SuccessfullyHasRetrievedArticlesActionPayload;
+  | SuccessfullyHasRetrievedArticlesActionPayload
+  | RetrievingArticlesActionPayload;
 
-const initialState: TimelineUiState = {
+const initialState: TimelineUiStateWithoutComputedProperties = {
   isRetrievingArticles: false,
   isRetrievingSources: false,
   hasFailedToRetrieveArticles: false,
@@ -48,7 +58,7 @@ const initialState: TimelineUiState = {
 };
 
 const reducer: Reducer<
-  TimelineUiState,
+  TimelineUiStateWithoutComputedProperties,
   BaseReducerAction<TimelineReducerActionType, TimelineReducerActionPayload>
 > = (state, action) => {
   switch (action.type) {
@@ -57,6 +67,9 @@ const reducer: Reducer<
         ...state,
         isRetrievingArticles: true,
         hasFailedToRetrieveArticles: false,
+        currentSelectedSource: (
+          action.payload as RetrievingArticlesActionPayload
+        )?.source,
       };
     case "retrieving-sources":
       return {
@@ -101,39 +114,28 @@ const reducer: Reducer<
 
 export function useTimelineViewModel(
   newsRepository: NewsRepository = newsRepositoryFactory()
-): BaseViewModel<TimelineUiState, TimelineUiEvents> {
+): BaseViewModel<TimelineUiStateWithComputedProperties, TimelineUiEvents> {
   const [uiState, dispatch] = useReducer(reducer, initialState);
 
   const onRetrieveSourcesAndArticles = async () => {
     try {
-      await Promise.all([
-        dispatch({ type: "retrieving-sources" }),
-        dispatch({ type: "retrieving-articles" }),
-      ]);
+      dispatch({ type: "retrieving-sources" });
       const availableSources = await newsRepository.getAvailableSources();
       dispatch({
         type: "sucessfully-has-retrieved-sources",
         payload: { sources: availableSources },
       });
       if (availableSources.length > 0) {
-        const articlesFromFirstRetrievedSource =
-          await newsRepository.getSourceHeadlines(availableSources[0]);
-        dispatch({
-          type: "sucessfully-has-retrieved-articles",
-          payload: { articles: articlesFromFirstRetrievedSource },
-        });
+        await onRetrieveArticlesFromSource(availableSources[0]);
       }
     } catch (e) {
-      await Promise.all([
-        dispatch({ type: "failed-to-retrieve-articles" }),
-        dispatch({ type: "failed-to-retrieve-sources" }),
-      ]);
+      dispatch({ type: "failed-to-retrieve-sources" });
     }
   };
 
   const onRetrieveArticlesFromSource = async (source: Source) => {
     try {
-      dispatch({ type: "retrieving-articles" });
+      dispatch({ type: "retrieving-articles", payload: { source } });
       const articles = await newsRepository.getSourceHeadlines(source);
       dispatch({
         type: "sucessfully-has-retrieved-articles",
@@ -145,7 +147,11 @@ export function useTimelineViewModel(
   };
 
   return {
-    uiState,
+    uiState: {
+      ...uiState,
+      canAvoidMultipleLoaders:
+        uiState.isRetrievingArticles && uiState.isRetrievingSources,
+    },
     events: { onRetrieveSourcesAndArticles, onRetrieveArticlesFromSource },
   };
 }
