@@ -7,6 +7,12 @@ import { Source } from "data/entity/source";
 import { Article } from "data/entity/article";
 import { newsRepositoryFactory, NewsRepository } from "data/repository/news";
 
+import {
+  GetAvailableSourcesAndOneHeadline,
+  GetAvailableSourcesAndOneHeadlineDTO,
+  getAvailableSourcesAndOneHeadlineUseCaseFactory,
+} from "domain/usecase/get-available-sources-and-one-headline";
+
 interface TimelineUiStateWithComputedProperties {
   readonly isRetrievingSources: boolean;
   readonly isRetrievingArticles: boolean;
@@ -30,21 +36,20 @@ interface TimelineUiEvents {
 interface RetrievingArticlesActionPayload {
   readonly source: Source;
 }
-interface SuccessfullyHasRetrievedSourcesActionPayload {
-  readonly sources: Source[];
-}
+interface SuccessfullyHasRetrievedSourcesAndArticlesActionPayload
+  extends GetAvailableSourcesAndOneHeadlineDTO {}
 interface SuccessfullyHasRetrievedArticlesActionPayload {
   readonly articles: Article[];
 }
 type TimelineReducerActionType =
-  | "retrieving-sources"
+  | "retrieving-sources-and-articles"
   | "retrieving-articles"
-  | "sucessfully-has-retrieved-sources"
+  | "sucessfully-has-retrieved-sources-and-articles"
   | "sucessfully-has-retrieved-articles"
-  | "failed-to-retrieve-sources"
+  | "failed-to-retrieve-sources-and-articles"
   | "failed-to-retrieve-articles";
 type TimelineReducerActionPayload =
-  | SuccessfullyHasRetrievedSourcesActionPayload
+  | SuccessfullyHasRetrievedSourcesAndArticlesActionPayload
   | SuccessfullyHasRetrievedArticlesActionPayload
   | RetrievingArticlesActionPayload;
 
@@ -71,11 +76,13 @@ const reducer: Reducer<
           action.payload as RetrievingArticlesActionPayload
         )?.source,
       };
-    case "retrieving-sources":
+    case "retrieving-sources-and-articles":
       return {
         ...state,
         isRetrievingSources: true,
+        isRetrievingArticles: true,
         hasFailedToRetrieveSources: false,
+        hasFailedToRetrieveArticles: false,
       };
     case "sucessfully-has-retrieved-articles":
       return {
@@ -86,14 +93,14 @@ const reducer: Reducer<
           action.payload as SuccessfullyHasRetrievedArticlesActionPayload
         )?.articles,
       };
-    case "sucessfully-has-retrieved-sources":
+    case "sucessfully-has-retrieved-sources-and-articles":
       return {
         ...state,
         isRetrievingSources: false,
+        isRetrievingArticles: false,
         hasFailedToRetrieveSources: false,
-        sources: (
-          action.payload as SuccessfullyHasRetrievedSourcesActionPayload
-        )?.sources,
+        hasFailedToRetrieveArticles: false,
+        ...(action.payload && action.payload),
       };
     case "failed-to-retrieve-articles":
       return {
@@ -101,11 +108,13 @@ const reducer: Reducer<
         hasFailedToRetrieveArticles: true,
         isRetrievingArticles: false,
       };
-    case "failed-to-retrieve-sources":
+    case "failed-to-retrieve-sources-and-articles":
       return {
         ...state,
         hasFailedToRetrieveSources: true,
+        hasFailedToRetrieveArticles: true,
         isRetrievingSources: false,
+        isRetrievingArticles: false,
       };
     default:
       return state;
@@ -113,23 +122,21 @@ const reducer: Reducer<
 };
 
 export function useTimelineViewModel(
-  newsRepository: NewsRepository = newsRepositoryFactory()
+  newsRepository: NewsRepository = newsRepositoryFactory(),
+  getAvailableSourcesAndOneHeadlineUseCase: GetAvailableSourcesAndOneHeadline = getAvailableSourcesAndOneHeadlineUseCaseFactory()
 ): BaseViewModel<TimelineUiStateWithComputedProperties, TimelineUiEvents> {
   const [uiState, dispatch] = useReducer(reducer, initialState);
 
   const onRetrieveSourcesAndArticles = async () => {
     try {
-      dispatch({ type: "retrieving-sources" });
-      const availableSources = await newsRepository.getAvailableSources();
+      dispatch({ type: "retrieving-sources-and-articles" });
+      const payload = await getAvailableSourcesAndOneHeadlineUseCase.execute();
       dispatch({
-        type: "sucessfully-has-retrieved-sources",
-        payload: { sources: availableSources },
+        type: "sucessfully-has-retrieved-sources-and-articles",
+        payload,
       });
-      if (availableSources.length > 0) {
-        await onRetrieveArticlesFromSource(availableSources[0]);
-      }
     } catch (e) {
-      dispatch({ type: "failed-to-retrieve-sources" });
+      dispatch({ type: "failed-to-retrieve-sources-and-articles" });
     }
   };
 
