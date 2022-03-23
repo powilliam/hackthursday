@@ -1,21 +1,11 @@
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
-import Constants from "expo-constants";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 
-export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>{Constants.manifest?.extra?.mySecret}</Text>
-      <StatusBar style="auto" />
-    </View>
-  );
-}
+import TimelineScreen from "ui/timeline/screen";
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-});
+export default () => (
+  <SafeAreaProvider>
+    <TimelineScreen />
+    <StatusBar translucent style="dark" />
+  </SafeAreaProvider>
+);
