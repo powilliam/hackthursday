@@ -6,6 +6,6 @@ import TimelineScreen from "ui/timeline/screen";
 export default () => (
   <SafeAreaProvider>
     <TimelineScreen />
-    <StatusBar translucent style="dark" />
+    <StatusBar translucent style="light" />
   </SafeAreaProvider>
 );
