@@ -7,14 +7,19 @@ import { Source } from "data/entity/source";
 import { Article } from "data/entity/article";
 import { newsRepositoryFactory, NewsRepository } from "data/repository/news";
 
-interface TimelineUiState {
+interface TimelineUiStateWithComputedProperties {
   readonly isRetrievingSources: boolean;
   readonly isRetrievingArticles: boolean;
   readonly hasFailedToRetrieveSources: boolean;
   readonly hasFailedToRetrieveArticles: boolean;
+  readonly canAvoidMultipleLoaders: boolean;
   readonly sources: Source[];
   readonly articles: Article[];
 }
+type TimelineUiStateWithoutComputedProperties = Omit<
+  TimelineUiStateWithComputedProperties,
+  "canAvoidMultipleLoaders"
+>;
 
 interface TimelineUiEvents {
   onRetrieveSourcesAndArticles(): Promise<void>;
@@ -38,7 +43,7 @@ type TimelineReducerActionPayload =
   | SuccessfullyHasRetrievedSourcesActionPayload
   | SuccessfullyHasRetrievedArticlesActionPayload;
 
-const initialState: TimelineUiState = {
+const initialState: TimelineUiStateWithoutComputedProperties = {
   isRetrievingArticles: false,
   isRetrievingSources: false,
   hasFailedToRetrieveArticles: false,
@@ -48,7 +53,7 @@ const initialState: TimelineUiState = {
 };
 
 const reducer: Reducer<
-  TimelineUiState,
+  TimelineUiStateWithoutComputedProperties,
   BaseReducerAction<TimelineReducerActionType, TimelineReducerActionPayload>
 > = (state, action) => {
   switch (action.type) {
@@ -101,7 +106,7 @@ const reducer: Reducer<
 
 export function useTimelineViewModel(
   newsRepository: NewsRepository = newsRepositoryFactory()
-): BaseViewModel<TimelineUiState, TimelineUiEvents> {
+): BaseViewModel<TimelineUiStateWithComputedProperties, TimelineUiEvents> {
   const [uiState, dispatch] = useReducer(reducer, initialState);
 
   const onRetrieveSourcesAndArticles = async () => {
@@ -145,7 +150,11 @@ export function useTimelineViewModel(
   };
 
   return {
-    uiState,
+    uiState: {
+      ...uiState,
+      canAvoidMultipleLoaders:
+        uiState.isRetrievingArticles && uiState.isRetrievingSources,
+    },
     events: { onRetrieveSourcesAndArticles, onRetrieveArticlesFromSource },
   };
 }

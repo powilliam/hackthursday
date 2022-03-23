@@ -24,17 +24,13 @@ const onExtractArticleKey = (article: Article) => article.url;
 export default function TimelineScreen() {
   const viewModel = useTimelineViewModel();
 
-  const canAvoidMultipleLoaders =
-    viewModel.uiState.isRetrievingArticles &&
-    viewModel.uiState.isRetrievingSources;
-
   useEffect(() => {
     viewModel.events?.onRetrieveSourcesAndArticles();
   }, []);
 
   return (
     <Scaffold edges={SCAFFOLD_EDGES}>
-      {canAvoidMultipleLoaders ? (
+      {viewModel.uiState.canAvoidMultipleLoaders ? (
         <SingleLoaderWrapper>
           <ActivityIndicator size="small" color="lightpurple" />
         </SingleLoaderWrapper>
