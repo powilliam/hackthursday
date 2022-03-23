@@ -1,4 +1,7 @@
 export default ({ config }) => ({
   ...config,
-  extra: { mySecret: "Hackthursday" },
+  extra: {
+    newsUrl: process.env.NEWS_URL,
+    newsSecret: process.env.NEWS_SECRET,
+  },
 });
