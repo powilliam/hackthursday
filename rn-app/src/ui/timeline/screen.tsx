@@ -45,6 +45,9 @@ export default function TimelineScreen() {
             ItemSeparatorComponent={() => <SourceSeparator />}
             renderItem={({ item }) => (
               <SourceChip
+                isSelected={
+                  viewModel.uiState.currentSelectedSource?.id === item.id
+                }
                 source={item}
                 onPress={() =>
                   viewModel.events?.onRetrieveArticlesFromSource(item)
