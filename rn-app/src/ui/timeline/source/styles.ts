@@ -1,6 +1,8 @@
 import styled from "styled-components/native";
 import { RectButton } from "react-native-gesture-handler";
 
+import { darkColors } from "ui/colors";
+
 interface ContainerProps {
   readonly isSelected?: boolean;
 }
@@ -8,7 +10,8 @@ interface ContainerProps {
 export const OuterContainer = styled.TouchableWithoutFeedback<ContainerProps>`
   min-height: 34px;
   border-radius: 500px;
-  background-color: ${(props) => (props.isSelected ? "#815600" : "#212121")};
+  background-color: ${(props) =>
+    props.isSelected ? darkColors.primary : darkColors.secondaryContainer};
 `;
 
 export const TouchableContainer = styled(RectButton)<ContainerProps>`
@@ -17,12 +20,14 @@ export const TouchableContainer = styled(RectButton)<ContainerProps>`
   align-items: center;
   justify-content: center;
   border-radius: 500px;
-  background-color: ${(props) => (props.isSelected ? "#815600" : "#212121")};
+  background-color: ${(props) =>
+    props.isSelected ? darkColors.primary : darkColors.secondaryContainer};
 `;
 
-export const Text = styled.Text`
+export const Text = styled.Text<ContainerProps>`
   font-size: 12px;
   letter-spacing: 1.15px;
-  color: white;
+  color: ${(props) =>
+    props.isSelected ? darkColors.onPrimary : darkColors.onSecondaryContainer};
   font-weight: bold;
 `;

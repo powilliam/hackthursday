@@ -22,7 +22,7 @@ export function Source({
   return (
     <OuterContainer isSelected={isSelected} {...props}>
       <TouchableContainer isSelected={isSelected} enabled={!disabled}>
-        <Text>{source.name}</Text>
+        <Text isSelected={isSelected}>{source.name}</Text>
       </TouchableContainer>
     </OuterContainer>
   );
